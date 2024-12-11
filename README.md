@@ -1,93 +1,99 @@
 # Diabetes-Prediction
-## 背景引入
-糖尿病是全球最普遍的慢性疾病之一，每年影响全球数千万人，主要特征是身体无法有效调节血液中的葡萄糖水平。这通常是因为胰腺不能产生足够的胰岛素，或者身体细胞对胰岛素的反应不佳。胰岛素是一种激素，它帮助细胞从血液中吸收葡萄糖以获取能量。糖尿病通常的特点是身体没有产生足够的胰岛素，或者无法根据需要有效地使用胰岛素。  
-本次作业任务是根据健康指标相关信息数据，然后通过训练数据训练模型，预测测试集所属类别。   
-目标分为三类，0为非糖尿病，1为糖尿病前期，2为糖尿病。
-## 数据集介绍
-本次作业数据包含 22 个字段，其中 target 字段为预测目标。数据集已上传云平台，文件名为
-data.csv。具体字段说明见下表：  
-| 字段         | 描述                             |
-|:--------------|:----------------------------------|
-| Id           | 样本标识id                        |
-| HighBP       | 高血压                           |
-| HighChol     | 高胆固醇检查                      |
-| CholCheck    | 胆固醇检查                        |
-| BMI          | 体重指数                          |
-| Smoker       | 吸烟者                           |
-| Stroke       | 中风                             |
-| HeartDiseaseorAttack | 心脏疾病或攻击              |
-| PhysActivity | 身体活动                          |
-| Fruits       | 水果                             |
-| Veggies       | 蔬菜                             |
-| HvyAlcoholConsump | 酗酒者                      |
-| AnyHealthcare | 任何医疗保健                      |
-| NoDocbcCost  | 是否就医成本                      |
-| GenHlth      | 健康状况                         |
-| MentHlth     | 心理健康                          |
-| PhysHlth     | 身体健康                          |
-| DiffWalk     | 走路/爬楼困难                      |
-| Sex          | 性别                             |
-| Age          | 年龄                             |
-| Education    | 教育                             |
-| Income       | 收入                             |
-| target       | 0为非糖尿病，1为糖尿病前期，2为糖尿病 |
-## 数据处理
-在数据处理时，我们采用了以下方法：  
-### 1.处理缺失值
-- **策略**：使用目标变量（target）分组后，用每组特征字段的平均值来填补缺失值。
-- **结果**：数据集整体完整，无任何缺失值。  
-### 2.处理异常值
-- **策略**：根据目标变量将数据分为三组，分别使用Z分数法和IQR算法结合的方法检测异常值，并将异常值替换为其上下限值。
-- **目的**：减少数据失衡对模型性能的影响。  
-### 3.数据规范化
-- **二分类变量**：识别出14个二分类变量，不进行规范化处理。
-- **连续型变量**：识别出7个连续型变量，根据模型需求进行不同的规范化处理：
-  1. **线性模型（如逻辑回归）**：对所有连续型变量进行标准化（Z-score）。
-  2. **基于树的模型（如决策树、随机森林、XGBoost、LightGBM）**：不对变量进行规范化处理。
-  3. **基于实例的模型（如KNN、K-Means）**：对所有数值特征进行归一化（min-max），将范围限制到[0,1]。
-  4. **多层感知机（MLP）**：对所有数值特征进行归一化（min-max），将范围限制到[0, 1]。  
-### 4.通过采样方法平衡数据
-#### 过采样方法
-1. **随机过采样**：
-   - 简单但可能导致过拟合。
-2. **SMOTE（合成少数过采样技术）**：
-   - 通过插值生成合成样本，避免过拟合。
-3. **ADASYN（自适应合成采样方法）**：
-   - 为难以分类的样本生成合成数据，增强模型泛化能力。
-4. **边缘型SMOTE**：
-   - 针对决策边界附近的少数类样本生成合成样本。
-5. **KMeans SMOTE**：
-   - 结合K-Means聚类和SMOTE，生成与上下文更相关的合成样本。
-#### 混合采样方法
-1. **SMOTEENN（SMOTE + Edited Nearest Neighbors）**：
-   - 结合SMOTE和ENN，优化合成样本。
-2. **SMOTETomek（SMOTE + Tomek链接）**：
-   - 结合SMOTE和Tomek链接，消除对立类的接近样本对，阐明决策边界。
-## 用于糖尿病预测的采样后分类器选择
-| 类别  | 算法    | 优势    | 弊端     |
-|-----|--------|--------------|------------|
-| 线性模型       | 多分类Logistic 回归            | 易于实施和解释。高效的训练。适合二元分类。  | 假设变量之间存在线性关系。不适合复杂的关系。   |
-|  线性模型      | 多类支持向量机 （Multi-class SVM） | 在高维空间中有效。内存高效。具有内核功能。  | 需要仔细调整参数。不适用于大型数据集。   |
-| 基于树的模型   | 随机森林分类器    | 很好地处理过拟合。适用于大型数据集。提供特征重要性。 | 预测速度可能很慢。复杂且难以解释。 |
-| 基于树的模型    | XGBoost    | 训练速度快，内置并行化和分布式计算支持；可处理缺失值，特征选择过程隐式完成；对参数及正则化有较多灵活性，从而在多种任务中表现优异。 | 参数较多且复杂，需精细调参；模型较难解释；在数据较小或过度复杂的情况下仍可能产生过拟合。 |
-|  基于树的模型  | AdaBoost 分类器     | 提高分类准确性。灵活地与任何学习算法相结合。  | 对干扰数据和异常值敏感。可以在非常复杂的数据集上过拟合。  |
-| 基于树的模型     | 梯度提升   | 高效且灵活。可以优化不同的损失函数。  | 在没有适当调整的情况下容易过拟合。训练很耗时。 |
-|  基于树的模型    | 集成学习（随机森林、KNN、AdaBoost、Bagging） | 将多种集成策略与基础模型优势互补，提升整体鲁棒性和预测精度；通过模型多样性减少过拟合风险；适应不同数据分布和任务场景 | 模型复杂度大幅提高，训练和预测过程计算成本高；参数调优和融合策略设计难度大；模型可解释性进一步降低，对数据量与资源要求更高 |
-| 基于实例的模型 | K 最近邻 （KNN）  | 不对数据进行假设。简单而有效。适用于任何类型的数据。  | 计算成本高。性能取决于维度的数量。  |
-| 神经网络模型   | MLP 分类器  | 能够对复杂的非线性关系进行建模，并且可以很好地处理大型数据集。  | 需要大量的计算资源，并且在没有适当的正则化的情况下容易出现过拟合。|  
-## 模型训练与评估指标
-### 验证协议:  
-在模型训练中，我们在每个折叠中使用 80 − 20 的训练-测试拆分，其中 80% 的数据用于训练，20% 的数据保留用于测试。另外，还我们使用了 5折交叉验证方法，从而来减少过拟合评估的风险更好地评估模型性能的稳定性和泛化能力。  
-### 评估指标:  
-鉴于原始数据极度不平衡，我们采用F1-score (Macro)作为模型性能度量指标。  
-F1-score的计算公式如下  
-$$F1_{score}= \frac{1}{n} \sum_{i=1}^{n} F1_i $$  
-其中  
+## Background Introduction
+Diabetes is one of the most common chronic diseases globally, affecting tens of millions of people each year. It is characterized by the body's inability to effectively regulate glucose levels in the blood. This is usually because the pancreas does not produce enough insulin or because cells in the body do not respond adequately to insulin. Insulin is a hormone that helps cells absorb glucose from the blood to obtain energy. Diabetes is typically characterized by the body not producing enough insulin or not being able to use insulin effectively as needed.
+The task of this assignment is to predict the category of the test set based on health indicator information data after training the model with training data.
+The target is divided into three categories: 0 for non-diabetic, 1 for pre-diabetes, and 2 for diabetes.
+## Dataset Description
+This assignment's data contains 22 fields, among which the target field is the prediction objective. The dataset is located at `dataset.csv`
+
+Specific field descriptions are shown in the following table:
+| Field         | Description                             |
+|:--------------|:----------------------------------------|
+| Id           | Sample ID                               |
+| HighBP       | High Blood Pressure                     |
+| HighChol     | High Cholesterol Check                  |
+| CholCheck    | Cholesterol Check                       |
+| BMI          | Body Mass Index                         |
+| Smoker       | Smoker                                  |
+| Stroke       | Stroke                                  |
+| HeartDiseaseorAttack | Heart Disease or Attack        |
+| PhysActivity | Physical Activity                       |
+| Fruits       | Fruit Consumption                       |
+| Veggies      | Vegetable Consumption                   |
+| HvyAlcoholConsump | Heavy Alcohol Consumption         |
+| AnyHealthcare | Any Healthcare                          |
+| NoDocbcCost  | Whether medical costs affect doctor visits |
+| GenHlth      | General Health                          |
+| MentHlth     | Mental Health                           |
+| PhysHlth     | Physical Health                         |
+| DiffWalk     | Difficulty Walking/Climbing Stairs      |
+| Sex          | Gender                                  |
+| Age          | Age                                     |
+| Education    | Education Level                         |
+| Income       | Income Level                            |
+| target       | 0 for non-diabetic, 1 for pre-diabetes, 2 for diabetic |
+
+## Data Processing
+During data processing, we adopted the following methods:
+### 1. Handling Missing Values
+- **Strategy**: Fill missing values using the mean value of each feature grouped by the target variable (target).
+- **Result**: The dataset is complete overall, with no missing values.
+### 2. Handling Outliers
+- **Strategy**: Divide the data into three groups according to the target variable, detect outliers using a combination of Z-score and IQR methods, and replace outliers with their upper or lower limit values.
+- **Purpose**: To minimize the impact of data imbalance on model performance.
+### 3. Data Normalization
+- **Binary Variables**: Identified 14 binary variables, which were not normalized.
+- **Continuous Variables**: Identified 7 continuous variables, and normalization was performed differently based on model requirements:
+  1. **Linear Models (such as Logistic Regression)**: Standardize all continuous variables (Z-score).
+  2. **Tree-based Models (such as Decision Trees, Random Forests, XGBoost, LightGBM)**: Do not normalize the variables.
+  3. **Instance-based Models (such as KNN, K-Means)**: Normalize all numerical features (min-max) to limit the range to [0,1].
+  4. **Multilayer Perceptron (MLP)**: Normalize all numerical features (min-max) to limit the range to [0, 1].
+### 4. Balancing Data Through Sampling Methods
+#### Oversampling Methods
+1. **Random Oversampling**:
+   - Simple but may lead to overfitting.
+2. **SMOTE (Synthetic Minority Over-sampling Technique)**:
+   - Generates synthetic samples through interpolation, avoiding overfitting.
+3. **ADASYN (Adaptive Synthetic Sampling Method)**:
+   - Generates synthetic data for hard-to-classify samples, enhancing model generalization ability.
+4. **Borderline SMOTE**:
+   - Generates synthetic samples targeting minority class samples near decision boundaries.
+5. **KMeans SMOTE**:
+   - Combines K-Means clustering and SMOTE to generate more contextually relevant synthetic samples.
+#### Hybrid Sampling Methods
+1. **SMOTEENN (SMOTE + Edited Nearest Neighbors)**:
+   - Combines SMOTE and ENN to optimize synthetic samples.
+2. **SMOTETomek (SMOTE + Tomek Links)**:
+   - Combines SMOTE and Tomek links to remove close opposing class samples, clarifying decision boundaries.
+## Selection of Post-Sampling Classifiers for Diabetes Prediction
+| Category  | Algorithm    | Advantages    | Disadvantages     |
+|---------|--------------|---------------|-------------------|
+| Linear Models       | Multiclass Logistic Regression            | Easy to implement and interpret. Efficient training. Suitable for binary classification.  | Assumes linear relationships between variables. Not suitable for complex relationships.   |
+| Linear Models       | Multi-class Support Vector Machine (SVM) | Effective in high-dimensional space. Memory efficient. Has kernel functionality.  | Requires careful parameter tuning. Not suitable for large datasets.   |
+| Tree-based Models   | Random Forest Classifier    | Handles overfitting well. Suitable for large datasets. Provides feature importance. | Prediction speed can be slow. Complex and difficult to interpret. |
+| Tree-based Models    | XGBoost    | Fast training speed, built-in parallelization and distributed computing support; handles missing values, implicit feature selection process; offers flexibility with parameters and regularization, performing excellently across various tasks. | Many parameters and complex, requiring fine-tuning; difficult to explain; can still overfit with smaller or overly complex datasets. |
+| Tree-based Models     | AdaBoost Classifier     | Increases classification accuracy. Flexible combination with any learning algorithm.  | Sensitive to noisy data and outliers. Can overfit very complex datasets.  |
+| Tree-based Models     | Gradient Boosting   | Efficient and flexible. Can optimize different loss functions.  | Prone to overfitting without proper adjustments. Training is time-consuming. |
+| Tree-based Models    | Ensemble Learning (Random Forest, KNN, AdaBoost, Bagging) | Complements the strengths of multiple ensemble strategies and base models, enhancing overall robustness and prediction accuracy; reduces overfitting risk through model diversity; adapts to different data distributions and task scenarios | Model complexity significantly increases, leading to high computational costs during training and prediction; parameter tuning and fusion strategy design are challenging; model interpretability further decreases, requiring more data and resources |
+| Instance-based Models | K Nearest Neighbors (KNN)  | Does not make assumptions about data. Simple and effective. Suitable for any type of data.  | High computational cost. Performance depends on the number of dimensions.  |
+| Neural Network Models   | MLP Classifier  | Capable of modeling complex nonlinear relationships and can handle large datasets well.  | Requires substantial computational resources and can easily overfit without appropriate regularization.|
+
+## Model Training and Evaluation Metrics
+### Validation Protocol:
+In model training, we used an 80 − 20 train-test split within each fold, where 80% of the data was used for training and 20% was reserved for testing. Additionally, we used a 5-fold cross-validation method to reduce the risk of overfitting evaluation and better assess the stability and generalization capability of the model performance.
+### Evaluation Metrics:
+Given the severe imbalance in the original data, we used F1-score (Macro) as the metric for evaluating model performance.
+The formula for calculating the F1-score is as follows
+$$F1_{score}= \frac{1}{n} \sum_{i=1}^{n} F1_i $$
+where
 $$F1_i = 2 \times \frac{P_i \times R_i}{P_i+R_i}$$  
 
-可供选择的模型如下：
-1. 支持向量机（SVM）
-2. 逻辑回归（Logistic Regression）
-3. K-临近算法（KNN）
-4. 决策树（Decision Tree）
-5. 集成学习（Ensemble Learning）
+The available models are as follows:
+1. Support Vector Machine (SVM)
+2. Logistic Regression
+3. K-Nearest Neighbors (KNN)
+4. Decision Tree
+5. Ensemble Learning
+
+## Program Execution
+The specific program code is located in `main.ipynb`
